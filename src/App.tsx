@@ -97,6 +97,7 @@ export function App() {
   const [brush, setBrush] = useState<Brush>(CELL_BRUSH);
   const [rule, setRule] = useState<Rule>(RULES[0]);
   const [palette, setPalette] = useState<Palette>(PALETTES[0]);
+  const [patternView, setPatternView] = useState<"list" | "grid">("list");
   const [zoom, setZoom] = useState(DEFAULT_CELL_SIZE);
 
   const syncStats = useCallback(() => {
@@ -494,6 +495,7 @@ export function App() {
 
       <div className="main">
         <aside className="sidebar">
+          <div className="sidebar-scroll">
           <div className="sidebar-title">Rule</div>
           <select
             className="rule-select"
@@ -523,25 +525,97 @@ export function App() {
             </div>
           </button>
 
-          <div className="sidebar-title">Patterns</div>
-          {rule.patterns.map((pattern) => {
-            const b: Brush = { kind: "pattern", pattern };
-            return (
+          <div className="section-header">
+            <div className="sidebar-title inline">Patterns</div>
+            <div className="view-toggle" role="tablist" aria-label="Pattern view">
               <button
-                key={pattern.name}
                 type="button"
-                className={`brush-item ${isBrushActive(b) ? "active" : ""}`}
-                onClick={() => selectBrush(b)}
-                title={pattern.description}
+                className={patternView === "list" ? "active" : ""}
+                onClick={() => setPatternView("list")}
+                title="List view"
+                aria-label="List view"
               >
-                <PatternPreview pattern={pattern} />
-                <div className="brush-meta">
-                  <div className="brush-name">{pattern.name}</div>
-                  <div className="brush-desc">{pattern.description}</div>
-                </div>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                  <rect x="0" y="1" width="12" height="2" rx="1" />
+                  <rect x="0" y="5" width="12" height="2" rx="1" />
+                  <rect x="0" y="9" width="12" height="2" rx="1" />
+                </svg>
               </button>
-            );
-          })}
+              <button
+                type="button"
+                className={patternView === "grid" ? "active" : ""}
+                onClick={() => setPatternView("grid")}
+                title="Grid view"
+                aria-label="Grid view"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                  <rect x="0" y="0" width="5" height="5" rx="1" />
+                  <rect x="7" y="0" width="5" height="5" rx="1" />
+                  <rect x="0" y="7" width="5" height="5" rx="1" />
+                  <rect x="7" y="7" width="5" height="5" rx="1" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className={`pattern-container ${patternView}`}>
+            {rule.patterns.map((pattern) => {
+              const b: Brush = { kind: "pattern", pattern };
+              const active = isBrushActive(b);
+              const fullTitle = `${pattern.name} — ${pattern.description}`;
+              if (patternView === "grid") {
+                return (
+                  <button
+                    key={pattern.name}
+                    type="button"
+                    className={`pattern-tile ${active ? "active" : ""}`}
+                    onClick={() => selectBrush(b)}
+                    title={fullTitle}
+                  >
+                    <PatternPreview pattern={pattern} />
+                    <span className="pattern-tile-name">{pattern.name}</span>
+                  </button>
+                );
+              }
+              return (
+                <button
+                  key={pattern.name}
+                  type="button"
+                  className={`brush-item ${active ? "active" : ""}`}
+                  onClick={() => selectBrush(b)}
+                  title={pattern.description}
+                >
+                  <PatternPreview pattern={pattern} />
+                  <div className="brush-meta">
+                    <div className="brush-name">{pattern.name}</div>
+                    <div className="brush-desc">{pattern.description}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          </div>
+
+          <div className="sidebar-pinned">
+            <div className="sidebar-title">Palette</div>
+            <select
+              className="rule-select"
+              value={palette.name}
+              onChange={(e) => selectPalette(e.target.value)}
+            >
+              {PALETTES.map((p) => (
+                <option key={p.name} value={p.name} title={p.description}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <div className="sidebar-legend">
+              <div className="legend-bar" style={{ background: legendGradient }} />
+              <div className="legend-ticks">
+                <span>new</span>
+                <span>{MAX_AGE}+ gen</span>
+              </div>
+            </div>
+          </div>
         </aside>
 
         <div className="canvas-wrap" ref={wrapRef}>
@@ -562,31 +636,6 @@ export function App() {
         </div>
       </div>
 
-      <footer className="footer">
-        <div className="legend" title="Cell color by age (generations alive)">
-          <span className="legend-label">Age</span>
-          <div className="legend-bar" style={{ background: legendGradient }} />
-          <div className="legend-ticks">
-            <span>0</span>
-            <span>{MAX_AGE}+</span>
-          </div>
-        </div>
-
-        <div className="group">
-          <label htmlFor="palette">Palette</label>
-          <select
-            id="palette"
-            value={palette.name}
-            onChange={(e) => selectPalette(e.target.value)}
-          >
-            {PALETTES.map((p) => (
-              <option key={p.name} value={p.name} title={p.description}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </footer>
     </div>
   );
 }
