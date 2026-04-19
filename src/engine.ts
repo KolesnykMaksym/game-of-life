@@ -13,7 +13,11 @@ const NEIGHBORS: ReadonlyArray<readonly [number, number]> = [
   [-1, 1],  [0, 1],  [1, 1],
 ];
 
-export function step(cells: LiveCells): LiveCells {
+export function step(
+  cells: LiveCells,
+  birth: ReadonlySet<number>,
+  survive: ReadonlySet<number>,
+): LiveCells {
   const neighborCounts = new Map<string, number>();
 
   for (const key of cells.keys()) {
@@ -28,10 +32,18 @@ export function step(cells: LiveCells): LiveCells {
   for (const [key, count] of neighborCounts) {
     const prevAge = cells.get(key);
     const wasAlive = prevAge !== undefined;
-    if (count === 3 || (count === 2 && wasAlive)) {
+    const lives = wasAlive ? survive.has(count) : birth.has(count);
+    if (lives) {
       next.set(key, wasAlive ? prevAge + 1 : 0);
     }
   }
+
+  if (survive.has(0)) {
+    for (const [key, prevAge] of cells) {
+      if (!neighborCounts.has(key)) next.set(key, prevAge + 1);
+    }
+  }
+
   return next;
 }
 

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cellKey, parseKey, step, type LiveCells } from "./engine";
-import { PATTERNS, type Pattern } from "./patterns";
+import { type Pattern } from "./patterns";
+import { RULES, type Rule } from "./rules";
+import { buildAgeColors, PALETTES, type Palette } from "./palettes";
 
 interface View {
   offsetX: number;
@@ -22,13 +24,8 @@ const zoomToSlider = (z: number) =>
   (100 * Math.log(z / MIN_CELL_SIZE)) / LOG_ZOOM_SPAN;
 
 const MAX_AGE = 63;
-const AGE_COLORS: readonly string[] = Array.from({ length: MAX_AGE + 1 }, (_, i) => {
-  const t = i / MAX_AGE;
-  const hue = 55 + t * 245;
-  const sat = 100 - t * 30;
-  const light = 82 - t * 30;
-  return `hsl(${Math.round(hue)}, ${Math.round(sat)}%, ${Math.round(light)}%)`;
-});
+const AGE_STEPS = MAX_AGE + 1;
+const LEGEND_STOPS = 16;
 
 function patternCenter(pattern: Pattern): { cx: number; cy: number } {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -82,6 +79,8 @@ export function App() {
   const rafRef = useRef(0);
 
   const brushRef = useRef<Brush>(CELL_BRUSH);
+  const ruleRef = useRef<Rule>(RULES[0]);
+  const ageColorsRef = useRef<readonly string[]>(buildAgeColors(PALETTES[0], AGE_STEPS));
   const paintModeRef = useRef<"add" | "remove" | null>(null);
   const paintedRef = useRef<Set<string>>(new Set());
   const panRef = useRef<{ startX: number; startY: number; origOffsetX: number; origOffsetY: number } | null>(null);
@@ -96,6 +95,8 @@ export function App() {
   const [generation, setGeneration] = useState(0);
   const [population, setPopulation] = useState(0);
   const [brush, setBrush] = useState<Brush>(CELL_BRUSH);
+  const [rule, setRule] = useState<Rule>(RULES[0]);
+  const [palette, setPalette] = useState<Palette>(PALETTES[0]);
   const [zoom, setZoom] = useState(DEFAULT_CELL_SIZE);
 
   const syncStats = useCallback(() => {
@@ -153,10 +154,11 @@ export function App() {
       const bucket = buckets[idx] ?? (buckets[idx] = []);
       bucket.push([cx, cy]);
     }
+    const palette = ageColorsRef.current;
     for (let i = 0; i <= MAX_AGE; i++) {
       const bucket = buckets[i];
       if (!bucket) continue;
-      ctx.fillStyle = AGE_COLORS[i];
+      ctx.fillStyle = palette[i];
       for (const [cx, cy] of bucket) fillRectAt(cx, cy);
     }
 
@@ -219,7 +221,8 @@ export function App() {
       const interval = 1000 / speedRef.current;
       if (t - lastTickRef.current >= interval) {
         lastTickRef.current = t;
-        cellsRef.current = step(cellsRef.current);
+        const { birth, survive } = ruleRef.current;
+        cellsRef.current = step(cellsRef.current, birth, survive);
         generationRef.current += 1;
         draw();
         syncStats();
@@ -237,7 +240,8 @@ export function App() {
   };
 
   const doStep = () => {
-    cellsRef.current = step(cellsRef.current);
+    const { birth, survive } = ruleRef.current;
+    cellsRef.current = step(cellsRef.current, birth, survive);
     generationRef.current += 1;
     draw();
     syncStats();
@@ -256,6 +260,35 @@ export function App() {
     brushRef.current = next;
     setBrush(next);
     draw();
+  };
+
+  const selectPalette = (name: string) => {
+    const next = PALETTES.find((p) => p.name === name) ?? PALETTES[0];
+    ageColorsRef.current = buildAgeColors(next, AGE_STEPS);
+    setPalette(next);
+    draw();
+  };
+
+  const legendGradient = useMemo(() => {
+    const stops = Array.from({ length: LEGEND_STOPS }, (_, i) =>
+      palette.build(i / (LEGEND_STOPS - 1)),
+    );
+    return `linear-gradient(to right, ${stops.join(", ")})`;
+  }, [palette]);
+
+  const selectRule = (name: string) => {
+    const next = RULES.find((r) => r.name === name) ?? RULES[0];
+    ruleRef.current = next;
+    setRule(next);
+    cellsRef.current = new Map();
+    generationRef.current = 0;
+    isRunningRef.current = false;
+    setIsRunning(false);
+    brushRef.current = CELL_BRUSH;
+    setBrush(CELL_BRUSH);
+    hoverCellRef.current = null;
+    draw();
+    syncStats();
   };
 
   const screenToCell = (clientX: number, clientY: number): [number, number] => {
@@ -461,6 +494,20 @@ export function App() {
 
       <div className="main">
         <aside className="sidebar">
+          <div className="sidebar-title">Rule</div>
+          <select
+            className="rule-select"
+            value={rule.name}
+            onChange={(e) => selectRule(e.target.value)}
+          >
+            {RULES.map((r) => (
+              <option key={r.name} value={r.name}>
+                {r.name} ({r.notation})
+              </option>
+            ))}
+          </select>
+          <div className="rule-description">{rule.description}</div>
+
           <div className="sidebar-title">Brush</div>
           <button
             type="button"
@@ -477,7 +524,7 @@ export function App() {
           </button>
 
           <div className="sidebar-title">Patterns</div>
-          {PATTERNS.map((pattern) => {
+          {rule.patterns.map((pattern) => {
             const b: Brush = { kind: "pattern", pattern };
             return (
               <button
@@ -514,6 +561,32 @@ export function App() {
           </div>
         </div>
       </div>
+
+      <footer className="footer">
+        <div className="legend" title="Cell color by age (generations alive)">
+          <span className="legend-label">Age</span>
+          <div className="legend-bar" style={{ background: legendGradient }} />
+          <div className="legend-ticks">
+            <span>0</span>
+            <span>{MAX_AGE}+</span>
+          </div>
+        </div>
+
+        <div className="group">
+          <label htmlFor="palette">Palette</label>
+          <select
+            id="palette"
+            value={palette.name}
+            onChange={(e) => selectPalette(e.target.value)}
+          >
+            {PALETTES.map((p) => (
+              <option key={p.name} value={p.name} title={p.description}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </footer>
     </div>
   );
 }
