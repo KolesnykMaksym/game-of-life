@@ -1,6 +1,7 @@
 export interface Pattern {
   name: string;
   description: string;
+  category?: string;
   cells: ReadonlyArray<readonly [number, number]>;
 }
 

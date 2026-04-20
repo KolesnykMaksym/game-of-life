@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cellKey, parseKey, step, type LiveCells } from "./engine";
 import { type Pattern } from "./patterns";
 import { RULES, type Rule } from "./rules";
@@ -558,40 +558,56 @@ export function App() {
             </div>
           </div>
           <div className={`pattern-container ${patternView}`}>
-            {rule.patterns.map((pattern) => {
-              const b: Brush = { kind: "pattern", pattern };
-              const active = isBrushActive(b);
-              const fullTitle = `${pattern.name} — ${pattern.description}`;
-              if (patternView === "grid") {
-                return (
-                  <button
-                    key={pattern.name}
-                    type="button"
-                    className={`pattern-tile ${active ? "active" : ""}`}
-                    onClick={() => selectBrush(b)}
-                    title={fullTitle}
-                  >
-                    <PatternPreview pattern={pattern} />
-                    <span className="pattern-tile-name">{pattern.name}</span>
-                  </button>
-                );
-              }
-              return (
-                <button
-                  key={pattern.name}
-                  type="button"
-                  className={`brush-item ${active ? "active" : ""}`}
-                  onClick={() => selectBrush(b)}
-                  title={pattern.description}
-                >
-                  <PatternPreview pattern={pattern} />
-                  <div className="brush-meta">
-                    <div className="brush-name">{pattern.name}</div>
-                    <div className="brush-desc">{pattern.description}</div>
-                  </div>
-                </button>
-              );
-            })}
+            {(() => {
+              const nodes: ReactNode[] = [];
+              let currentCategory: string | undefined;
+              rule.patterns.forEach((pattern) => {
+                if (pattern.category !== currentCategory) {
+                  currentCategory = pattern.category;
+                  if (currentCategory) {
+                    nodes.push(
+                      <div key={`cat-${currentCategory}`} className="pattern-category">
+                        {currentCategory}
+                      </div>,
+                    );
+                  }
+                }
+                const b: Brush = { kind: "pattern", pattern };
+                const active = isBrushActive(b);
+                const fullTitle = `${pattern.name} — ${pattern.description}`;
+                if (patternView === "grid") {
+                  nodes.push(
+                    <button
+                      key={pattern.name}
+                      type="button"
+                      className={`pattern-tile ${active ? "active" : ""}`}
+                      onClick={() => selectBrush(b)}
+                      title={fullTitle}
+                    >
+                      <PatternPreview pattern={pattern} />
+                      <span className="pattern-tile-name">{pattern.name}</span>
+                    </button>,
+                  );
+                } else {
+                  nodes.push(
+                    <button
+                      key={pattern.name}
+                      type="button"
+                      className={`brush-item ${active ? "active" : ""}`}
+                      onClick={() => selectBrush(b)}
+                      title={pattern.description}
+                    >
+                      <PatternPreview pattern={pattern} />
+                      <div className="brush-meta">
+                        <div className="brush-name">{pattern.name}</div>
+                        <div className="brush-desc">{pattern.description}</div>
+                      </div>
+                    </button>,
+                  );
+                }
+              });
+              return nodes;
+            })()}
           </div>
           </div>
 
