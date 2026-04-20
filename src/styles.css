@@ -109,7 +109,7 @@ body,
   display: flex;
   flex-direction: column;
   gap: 4px;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .pattern-container.grid {
@@ -118,7 +118,7 @@ body,
   grid-auto-rows: min-content;
   align-content: start;
   gap: 4px;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .pattern-tile {
