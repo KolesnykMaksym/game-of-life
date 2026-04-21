@@ -1,4 +1,4 @@
-import { fromRows, type Pattern } from "./patterns";
+import { fromRLE, fromRows, type Pattern } from "./patterns";
 
 export interface Rule {
   name: string;
@@ -409,6 +409,59 @@ const LWOD: Pattern[] = [
     name: "Block",
     description: "Quiet 2×2 — requires neighbors to grow",
     cells: fromRows(["OO", "OO"]),
+  },
+];
+
+// ---------- Machines (famous complex Life constructions, from LifeWiki RLE) ----------
+
+const CONWAY_MACHINES: Pattern[] = [
+  {
+    name: "Copperhead",
+    description: "Period-10 c/10 orthogonal spaceship — discovered 2016",
+    category: "Machines",
+    cells: fromRLE("b2o2b2o$3b2o$3b2o$obo2bobo$o6bo2$o6bo$b2o2b2o$2b4o2$3b2o$3b2o!"),
+  },
+  {
+    name: "Simkin glider gun",
+    description: "Smallest known glider gun — period 120, 29 cells",
+    category: "Machines",
+    cells: fromRLE("2o5b2o$2o5b2o2$4b2o$4b2o5$22bo3bo$21bo4b2o$20b2o5b2o2b2o$21b2o4bo3b2o$22bo!"),
+  },
+  {
+    name: "Queen bee shuttle",
+    description: "Period-30 oscillator — the heart of the Gosper gun",
+    category: "Machines",
+    cells: fromRLE("9bo$7bobo$6bobo11b2o$2o3bo2bo11b2o$2o4bobo$7bobo$9bo!"),
+  },
+  {
+    name: "Twin bees shuttle",
+    description: "Period-46 oscillator by Bill Gosper",
+    category: "Machines",
+    cells: fromRLE("17b2o$2o15bobo7b2o$2o17bo7b2o$17b3o4$17b3o$2o17bo$2o15bobo$17b2o!"),
+  },
+  {
+    name: "Blinker puffer",
+    description: "Puffer train — leaves a trail of blinkers as it moves",
+    category: "Machines",
+    cells: fromRLE("3bo$bo3bo$o$o4bo$5o4$b2o$2ob3o$b4o$2b2o2$5b2o$3bo4bo$2bo$2bo5bo$2b6o!"),
+  },
+  {
+    name: "Weekender",
+    description: "Period-7 c/7 spaceship — 36 cells",
+    category: "Machines",
+    cells: fromRLE("bo12bo$bo12bo$obo10bobo$bo12bo$bo12bo$2bo3b4o3bo$6b4o$2b4o4b4o2$4bo6bo$5b2o2b2o!"),
+  },
+  {
+    name: "MWSS",
+    description: "Middle-weight spaceship — c/2 orthogonal (11 cells)",
+    category: "Machines",
+    cells: fromRLE("3bo$bo3bo$o$o4bo$5o!"),
+  },
+  {
+    name: "HWSS",
+    description: "Heavy-weight spaceship — c/2 orthogonal (13 cells)",
+    category: "Machines",
+    cells: fromRLE("3b2o$bo4bo$o$o5bo$6o!"),
   },
 ];
 
@@ -1356,7 +1409,7 @@ export const RULES: readonly Rule[] = [
     description: "The classic cellular automaton",
     birth: new Set([3]),
     survive: new Set([2, 3]),
-    patterns: [...CONWAY, ...CONWAY_CONSTRUCTIONS],
+    patterns: [...CONWAY, ...CONWAY_CONSTRUCTIONS, ...CONWAY_MACHINES],
   },
   {
     name: "HighLife",
