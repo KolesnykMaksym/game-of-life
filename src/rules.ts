@@ -465,265 +465,6 @@ const CONWAY_MACHINES: Pattern[] = [
   },
 ];
 
-// ---------- Constructions (multi-component compositions) ----------
-
-const CONWAY_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Glider vs Block",
-    description: "SE glider collides with a block",
-    category: "Constructions",
-    cells: [
-      // SE glider at (0,0)
-      [1, 0], [2, 1], [0, 2], [1, 2], [2, 2],
-      // Block at (12,12)
-      [12, 12], [13, 12], [12, 13], [13, 13],
-    ],
-  },
-  {
-    name: "Head-on gliders",
-    description: "SE glider meets NW glider — head-on",
-    category: "Constructions",
-    cells: [
-      // SE glider at (0,0)
-      [1, 0], [2, 1], [0, 2], [1, 2], [2, 2],
-      // NW glider at (12,12): shape OOO/O../.O.
-      [12, 12], [13, 12], [14, 12], [12, 13], [13, 14],
-    ],
-  },
-  {
-    name: "R-pent pair",
-    description: "Two R-pentominoes evolving in parallel",
-    category: "Constructions",
-    cells: [
-      // Left R-pent at (0,0)
-      [1, 0], [2, 0], [0, 1], [1, 1], [1, 2],
-      // Right R-pent at (15,0)
-      [16, 0], [17, 0], [15, 1], [16, 1], [16, 2],
-    ],
-  },
-  {
-    name: "Glider trio",
-    description: "Three gliders marching SE in a diagonal queue",
-    category: "Constructions",
-    cells: [
-      // Glider 1 at (0,0)
-      [1, 0], [2, 1], [0, 2], [1, 2], [2, 2],
-      // Glider 2 at (8,8)
-      [9, 8], [10, 9], [8, 10], [9, 10], [10, 10],
-      // Glider 3 at (16,16)
-      [17, 16], [18, 17], [16, 18], [17, 18], [18, 18],
-    ],
-  },
-  {
-    name: "Acorn + Block",
-    description: "Acorn methuselah with a block at its path",
-    category: "Constructions",
-    cells: [
-      // Acorn at (0,0)
-      [1, 0], [3, 1], [0, 2], [1, 2], [4, 2], [5, 2], [6, 2],
-      // Block at (20,15)
-      [20, 15], [21, 15], [20, 16], [21, 16],
-    ],
-  },
-];
-
-const HIGHLIFE_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Replicator pair",
-    description: "Two replicators 10 cells apart",
-    category: "Constructions",
-    cells: [
-      // Left replicator at (0,0): .OOO/O..O/O..O/O..O/OOO.
-      [1, 0], [2, 0], [3, 0], [0, 1], [3, 1], [0, 2], [3, 2], [0, 3], [3, 3], [0, 4], [1, 4], [2, 4],
-      // Right replicator at (10,0)
-      [11, 0], [12, 0], [13, 0], [10, 1], [13, 1], [10, 2], [13, 2], [10, 3], [13, 3], [10, 4], [11, 4], [12, 4],
-    ],
-  },
-  {
-    name: "Replicator + Block",
-    description: "Replicator next to a block still life",
-    category: "Constructions",
-    cells: [
-      // Replicator at (0,0)
-      [1, 0], [2, 0], [3, 0], [0, 1], [3, 1], [0, 2], [3, 2], [0, 3], [3, 3], [0, 4], [1, 4], [2, 4],
-      // Block at (10,0)
-      [10, 0], [11, 0], [10, 1], [11, 1],
-    ],
-  },
-  {
-    name: "Four replicators",
-    description: "Symmetric square of replicators",
-    category: "Constructions",
-    cells: [
-      // Top-left (0,0)
-      [1, 0], [2, 0], [3, 0], [0, 1], [3, 1], [0, 2], [3, 2], [0, 3], [3, 3], [0, 4], [1, 4], [2, 4],
-      // Top-right (15,0)
-      [16, 0], [17, 0], [18, 0], [15, 1], [18, 1], [15, 2], [18, 2], [15, 3], [18, 3], [15, 4], [16, 4], [17, 4],
-      // Bottom-left (0,15)
-      [1, 15], [2, 15], [3, 15], [0, 16], [3, 16], [0, 17], [3, 17], [0, 18], [3, 18], [0, 19], [1, 19], [2, 19],
-      // Bottom-right (15,15)
-      [16, 15], [17, 15], [18, 15], [15, 16], [18, 16], [15, 17], [18, 17], [15, 18], [18, 18], [15, 19], [16, 19], [17, 19],
-    ],
-  },
-];
-
-const SEEDS_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Two dominoes",
-    description: "Two domino seeds — interference patterns",
-    category: "Constructions",
-    cells: [
-      [0, 0], [1, 0],
-      [6, 6], [7, 6],
-    ],
-  },
-  {
-    name: "Two T-tetrominoes",
-    description: "Two T-shapes — overlapping explosions",
-    category: "Constructions",
-    cells: [
-      [0, 0], [1, 0], [2, 0], [1, 1],
-      [10, 0], [11, 0], [12, 0], [11, 1],
-    ],
-  },
-  {
-    name: "Cross quartet",
-    description: "Four crosses in symmetric cross arrangement",
-    category: "Constructions",
-    cells: [
-      // Top (5,0)
-      [5, 0], [4, 1], [5, 1], [6, 1], [5, 2],
-      // Left (0,5)
-      [0, 5], [-1, 6], [0, 6], [1, 6], [0, 7],
-      // Right (10,5)
-      [10, 5], [9, 6], [10, 6], [11, 6], [10, 7],
-      // Bottom (5,10)
-      [5, 10], [4, 11], [5, 11], [6, 11], [5, 12],
-    ],
-  },
-];
-
-const DAYNIGHT_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Two blocks",
-    description: "Two blocks — stable coexistence",
-    category: "Constructions",
-    cells: [
-      [0, 0], [1, 0], [0, 1], [1, 1],
-      [8, 8], [9, 8], [8, 9], [9, 9],
-    ],
-  },
-  {
-    name: "Block + 3×3 solid",
-    description: "Low-density and high-density seeds side by side",
-    category: "Constructions",
-    cells: [
-      [0, 0], [1, 0], [0, 1], [1, 1],
-      [6, 0], [7, 0], [8, 0], [6, 1], [7, 1], [8, 1], [6, 2], [7, 2], [8, 2],
-    ],
-  },
-  {
-    name: "Four 3×3 solids",
-    description: "Symmetric 2×2 arrangement of filled squares",
-    category: "Constructions",
-    cells: [
-      // TL at (0,0)
-      [0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2],
-      // TR at (8,0)
-      [8, 0], [9, 0], [10, 0], [8, 1], [9, 1], [10, 1], [8, 2], [9, 2], [10, 2],
-      // BL at (0,8)
-      [0, 8], [1, 8], [2, 8], [0, 9], [1, 9], [2, 9], [0, 10], [1, 10], [2, 10],
-      // BR at (8,8)
-      [8, 8], [9, 8], [10, 8], [8, 9], [9, 9], [10, 9], [8, 10], [9, 10], [10, 10],
-    ],
-  },
-];
-
-const MAZE_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Block cluster",
-    description: "Four blocks — mazes merge into a larger network",
-    category: "Constructions",
-    cells: [
-      // TL at (0,0)
-      [0, 0], [1, 0], [0, 1], [1, 1],
-      // TR at (5,0)
-      [5, 0], [6, 0], [5, 1], [6, 1],
-      // BL at (0,5)
-      [0, 5], [1, 5], [0, 6], [1, 6],
-      // BR at (5,5)
-      [5, 5], [6, 5], [5, 6], [6, 6],
-    ],
-  },
-  {
-    name: "Cross lattice",
-    description: "Five crosses in quincunx — symmetric maze growth",
-    category: "Constructions",
-    cells: [
-      // Center cross (5,5)
-      [5, 4], [4, 5], [5, 5], [6, 5], [5, 6],
-      // TL cross (0,0)
-      [0, -1], [-1, 0], [0, 0], [1, 0], [0, 1],
-      // TR cross (10,0)
-      [10, -1], [9, 0], [10, 0], [11, 0], [10, 1],
-      // BL cross (0,10)
-      [0, 9], [-1, 10], [0, 10], [1, 10], [0, 11],
-      // BR cross (10,10)
-      [10, 9], [9, 10], [10, 10], [11, 10], [10, 11],
-    ],
-  },
-  {
-    name: "Big block",
-    description: "5×5 filled square — complex maze outgrowth",
-    category: "Constructions",
-    cells: [
-      [0, 0], [1, 0], [2, 0], [3, 0], [4, 0],
-      [0, 1], [1, 1], [2, 1], [3, 1], [4, 1],
-      [0, 2], [1, 2], [2, 2], [3, 2], [4, 2],
-      [0, 3], [1, 3], [2, 3], [3, 3], [4, 3],
-      [0, 4], [1, 4], [2, 4], [3, 4], [4, 4],
-    ],
-  },
-];
-
-const LWOD_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "R-pent pair",
-    description: "Two R-pentominoes growing together",
-    category: "Constructions",
-    cells: [
-      [1, 0], [2, 0], [0, 1], [1, 1], [1, 2],
-      [16, 0], [17, 0], [15, 1], [16, 1], [16, 2],
-    ],
-  },
-  {
-    name: "R-pent + Acorn",
-    description: "Two methuselahs with different growth rates",
-    category: "Constructions",
-    cells: [
-      // R-pent at (0,0)
-      [1, 0], [2, 0], [0, 1], [1, 1], [1, 2],
-      // Acorn at (12,0)
-      [13, 0], [15, 1], [12, 2], [13, 2], [16, 2], [17, 2], [18, 2],
-    ],
-  },
-  {
-    name: "Four gliders",
-    description: "Four Life gliders in cross — permanent cross structure",
-    category: "Constructions",
-    cells: [
-      // Top glider (5,0)
-      [6, 0], [7, 1], [5, 2], [6, 2], [7, 2],
-      // Left (0,5)
-      [1, 5], [2, 6], [0, 7], [1, 7], [2, 7],
-      // Right (10,5)
-      [11, 5], [12, 6], [10, 7], [11, 7], [12, 7],
-      // Bottom (5,10)
-      [6, 10], [7, 11], [5, 12], [6, 12], [7, 12],
-    ],
-  },
-];
-
 // ─── Morley / Move (B368/S245) ───────────────────────────────────────────────
 
 const MORLEY: Pattern[] = [
@@ -771,38 +512,6 @@ const MORLEY: Pattern[] = [
     name: "Dense 4×4",
     description: "Filled square — complex breakup",
     cells: fromRows(["OOOO", "OOOO", "OOOO", "OOOO"]),
-  },
-];
-
-const MORLEY_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Two R-pentos",
-    description: "Pair of R-pentominoes — interacting chaotic evolution",
-    category: "Constructions",
-    cells: [
-      [1, 0], [2, 0], [0, 1], [1, 1], [1, 2],
-      [16, 0], [17, 0], [15, 1], [16, 1], [16, 2],
-    ],
-  },
-  {
-    name: "Four crosses",
-    description: "Symmetric quartet of cross seeds",
-    category: "Constructions",
-    cells: [
-      [1, 0], [0, 1], [1, 1], [2, 1], [1, 2],
-      [11, 0], [10, 1], [11, 1], [12, 1], [11, 2],
-      [1, 10], [0, 11], [1, 11], [2, 11], [1, 12],
-      [11, 10], [10, 11], [11, 11], [12, 11], [11, 12],
-    ],
-  },
-  {
-    name: "Acorn pair",
-    description: "Two Acorns at distance — parallel evolution",
-    category: "Constructions",
-    cells: [
-      [1, 0], [3, 1], [0, 2], [1, 2], [4, 2], [5, 2], [6, 2],
-      [20, 0], [22, 1], [19, 2], [20, 2], [23, 2], [24, 2], [25, 2],
-    ],
   },
 ];
 
@@ -866,37 +575,6 @@ const DIAMOEBA: Pattern[] = [
   },
 ];
 
-const DIAMOEBA_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Four blobs",
-    description: "Four 3×3 blobs at corners — separate amoeba colonies",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2],
-      [14,0],[15,0],[16,0],[14,1],[15,1],[16,1],[14,2],[15,2],[16,2],
-      [0,14],[1,14],[2,14],[0,15],[1,15],[2,15],[0,16],[1,16],[2,16],
-      [14,14],[15,14],[16,14],[14,15],[15,15],[16,15],[14,16],[15,16],[16,16],
-    ],
-  },
-  {
-    name: "Two large blobs",
-    description: "Two 5×5 blobs — collision course",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[2,0],[3,0],[4,0],
-      [0,1],[1,1],[2,1],[3,1],[4,1],
-      [0,2],[1,2],[2,2],[3,2],[4,2],
-      [0,3],[1,3],[2,3],[3,3],[4,3],
-      [0,4],[1,4],[2,4],[3,4],[4,4],
-      [18,0],[19,0],[20,0],[21,0],[22,0],
-      [18,1],[19,1],[20,1],[21,1],[22,1],
-      [18,2],[19,2],[20,2],[21,2],[22,2],
-      [18,3],[19,3],[20,3],[21,3],[22,3],
-      [18,4],[19,4],[20,4],[21,4],[22,4],
-    ],
-  },
-];
-
 // ─── 2x2 (B36/S125) ──────────────────────────────────────────────────────────
 
 const TWOX2: Pattern[] = [
@@ -947,40 +625,6 @@ const TWOX2: Pattern[] = [
   },
 ];
 
-const TWOX2_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Domino row",
-    description: "Four dominoes — synchronized still lifes",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],
-      [5,0],[6,0],
-      [10,0],[11,0],
-      [15,0],[16,0],
-    ],
-  },
-  {
-    name: "Domino grid",
-    description: "Lattice of dominoes — stable field",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0], [5,0],[6,0],
-      [0,4],[1,4], [5,4],[6,4],
-      [0,8],[1,8], [5,8],[6,8],
-    ],
-  },
-  {
-    name: "R-pento trio",
-    description: "Three R-pentominoes — complex interplay",
-    category: "Constructions",
-    cells: [
-      [1,0],[2,0],[0,1],[1,1],[1,2],
-      [12,0],[13,0],[11,1],[12,1],[12,2],
-      [23,0],[24,0],[22,1],[23,1],[23,2],
-    ],
-  },
-];
-
 // ─── Coral (B3/S45678) ───────────────────────────────────────────────────────
 
 const CORAL: Pattern[] = [
@@ -1021,46 +665,6 @@ const CORAL: Pattern[] = [
   },
 ];
 
-const CORAL_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Two 3×3 seeds",
-    description: "Two coral colonies growing toward each other",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2],
-      [14,0],[15,0],[16,0],[14,1],[15,1],[16,1],[14,2],[15,2],[16,2],
-    ],
-  },
-  {
-    name: "Four seeds",
-    description: "Four 3×3 coral colonies in corners",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2],
-      [14,0],[15,0],[16,0],[14,1],[15,1],[16,1],[14,2],[15,2],[16,2],
-      [0,14],[1,14],[2,14],[0,15],[1,15],[2,15],[0,16],[1,16],[2,16],
-      [14,14],[15,14],[16,14],[14,15],[15,15],[16,15],[14,16],[15,16],[16,16],
-    ],
-  },
-  {
-    name: "Cross cluster",
-    description: "Five 3×3 seeds in quincunx — coral network",
-    category: "Constructions",
-    cells: [
-      // center
-      [7,7],[8,7],[9,7],[7,8],[8,8],[9,8],[7,9],[8,9],[9,9],
-      // TL
-      [0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2],
-      // TR
-      [14,0],[15,0],[16,0],[14,1],[15,1],[16,1],[14,2],[15,2],[16,2],
-      // BL
-      [0,14],[1,14],[2,14],[0,15],[1,15],[2,15],[0,16],[1,16],[2,16],
-      // BR
-      [14,14],[15,14],[16,14],[14,15],[15,15],[16,15],[14,16],[15,16],[16,16],
-    ],
-  },
-];
-
 // ─── Fredkin Replicator (B1357/S1357) ────────────────────────────────────────
 
 const FREDKIN: Pattern[] = [
@@ -1098,30 +702,6 @@ const FREDKIN: Pattern[] = [
     name: "Diagonal line",
     description: "Diagonal 5-cell seed",
     cells: [[0,4],[1,3],[2,2],[3,1],[4,0]],
-  },
-];
-
-const FREDKIN_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Two singles",
-    description: "Two replicator cells — interference fractals",
-    category: "Constructions",
-    cells: [[0, 0], [12, 0]],
-  },
-  {
-    name: "Four corners",
-    description: "Single cell in each corner — four fractal expansions",
-    category: "Constructions",
-    cells: [[0, 0], [16, 0], [0, 16], [16, 16]],
-  },
-  {
-    name: "Two blocks",
-    description: "Two 2×2 blocks — replicator pair",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[0,1],[1,1],
-      [10,0],[11,0],[10,1],[11,1],
-    ],
   },
 ];
 
@@ -1194,56 +774,6 @@ const ANNEAL: Pattern[] = [
   },
 ];
 
-const ANNEAL_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Dense vs sparse",
-    description: "Dense and sparse clusters side by side — competing annealing",
-    category: "Constructions",
-    cells: [
-      // Dense 5×5
-      [0,0],[1,0],[2,0],[3,0],[4,0],
-      [0,1],[1,1],[2,1],[3,1],[4,1],
-      [0,2],[1,2],[2,2],[3,2],[4,2],
-      [0,3],[1,3],[2,3],[3,3],[4,3],
-      [0,4],[1,4],[2,4],[3,4],[4,4],
-      // Sparse 5×5 (checkerboard)
-      [12,0],[14,0],
-      [13,1],
-      [12,2],[14,2],
-      [13,3],
-      [12,4],[14,4],
-    ],
-  },
-  {
-    name: "Four random clusters",
-    description: "Four random blobs — independent annealing",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[0,1],[2,1],[1,2],[2,2],[0,2],
-      [12,0],[13,0],[14,0],[12,1],[14,1],[13,2],
-      [0,12],[1,12],[0,13],[2,13],[1,14],[2,14],
-      [12,12],[14,12],[13,13],[12,14],[13,14],[14,14],
-    ],
-  },
-  {
-    name: "Two stable islands",
-    description: "Two 5×5 still lifes — permanent coexistence",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[2,0],[3,0],[4,0],
-      [0,1],[1,1],[2,1],[3,1],[4,1],
-      [0,2],[1,2],[2,2],[3,2],[4,2],
-      [0,3],[1,3],[2,3],[3,3],[4,3],
-      [0,4],[1,4],[2,4],[3,4],[4,4],
-      [16,0],[17,0],[18,0],[19,0],[20,0],
-      [16,1],[17,1],[18,1],[19,1],[20,1],
-      [16,2],[17,2],[18,2],[19,2],[20,2],
-      [16,3],[17,3],[18,3],[19,3],[20,3],
-      [16,4],[17,4],[18,4],[19,4],[20,4],
-    ],
-  },
-];
-
 // ─── Walled Cities (B45678/S2345) ────────────────────────────────────────────
 
 const WALLEDCITIES: Pattern[] = [
@@ -1286,37 +816,6 @@ const WALLEDCITIES: Pattern[] = [
       "OOO......OOO",
       "OOO......OOO",
     ]),
-  },
-];
-
-const WALLEDCITIES_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Four cities",
-    description: "Four 3×3 seeds — four independent city growths",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2],
-      [14,0],[15,0],[16,0],[14,1],[15,1],[16,1],[14,2],[15,2],[16,2],
-      [0,14],[1,14],[2,14],[0,15],[1,15],[2,15],[0,16],[1,16],[2,16],
-      [14,14],[15,14],[16,14],[14,15],[15,15],[16,15],[14,16],[15,16],[16,16],
-    ],
-  },
-  {
-    name: "City collision",
-    description: "Two 5×5 blocks approaching — cities merge",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[2,0],[3,0],[4,0],
-      [0,1],[1,1],[2,1],[3,1],[4,1],
-      [0,2],[1,2],[2,2],[3,2],[4,2],
-      [0,3],[1,3],[2,3],[3,3],[4,3],
-      [0,4],[1,4],[2,4],[3,4],[4,4],
-      [16,0],[17,0],[18,0],[19,0],[20,0],
-      [16,1],[17,1],[18,1],[19,1],[20,1],
-      [16,2],[17,2],[18,2],[19,2],[20,2],
-      [16,3],[17,3],[18,3],[19,3],[20,3],
-      [16,4],[17,4],[18,4],[19,4],[20,4],
-    ],
   },
 ];
 
@@ -1370,38 +869,6 @@ const STAINS: Pattern[] = [
   },
 ];
 
-const STAINS_CONSTRUCTIONS: Pattern[] = [
-  {
-    name: "Glider pair",
-    description: "Two gliders — collide into stain",
-    category: "Constructions",
-    cells: [
-      [1, 0], [2, 1], [0, 2], [1, 2], [2, 2],
-      [12, 0], [13, 1], [11, 2], [12, 2], [13, 2],
-    ],
-  },
-  {
-    name: "R-pento pair",
-    description: "Two R-pentominoes — stain interaction",
-    category: "Constructions",
-    cells: [
-      [1, 0], [2, 0], [0, 1], [1, 1], [1, 2],
-      [14, 0], [15, 0], [13, 1], [14, 1], [14, 2],
-    ],
-  },
-  {
-    name: "Four blobs",
-    description: "Four random seeds — stains merge",
-    category: "Constructions",
-    cells: [
-      [0,0],[1,0],[0,1],[2,1],[1,2],
-      [12,0],[13,0],[14,0],[12,1],[14,1],
-      [0,12],[1,12],[0,13],[2,13],[1,14],
-      [12,12],[14,12],[13,13],[12,14],[13,14],
-    ],
-  },
-];
-
 export const RULES: readonly Rule[] = [
   {
     name: "Conway's Life",
@@ -1409,7 +876,7 @@ export const RULES: readonly Rule[] = [
     description: "The classic cellular automaton",
     birth: new Set([3]),
     survive: new Set([2, 3]),
-    patterns: [...CONWAY, ...CONWAY_CONSTRUCTIONS, ...CONWAY_MACHINES],
+    patterns: [...CONWAY, ...CONWAY_MACHINES],
   },
   {
     name: "HighLife",
@@ -1417,7 +884,7 @@ export const RULES: readonly Rule[] = [
     description: "Like Life, but also birth on 6 — supports self-replicators",
     birth: new Set([3, 6]),
     survive: new Set([2, 3]),
-    patterns: [...HIGHLIFE, ...HIGHLIFE_CONSTRUCTIONS],
+    patterns: [...HIGHLIFE],
   },
   {
     name: "Seeds",
@@ -1425,7 +892,7 @@ export const RULES: readonly Rule[] = [
     description: "No cell survives; birth on exactly 2. Explosive.",
     birth: new Set([2]),
     survive: new Set(),
-    patterns: [...SEEDS, ...SEEDS_CONSTRUCTIONS],
+    patterns: [...SEEDS],
   },
   {
     name: "Day & Night",
@@ -1433,7 +900,7 @@ export const RULES: readonly Rule[] = [
     description: "Symmetric under on↔off inversion",
     birth: new Set([3, 6, 7, 8]),
     survive: new Set([3, 4, 6, 7, 8]),
-    patterns: [...DAYNIGHT, ...DAYNIGHT_CONSTRUCTIONS],
+    patterns: [...DAYNIGHT],
   },
   {
     name: "Maze",
@@ -1441,7 +908,7 @@ export const RULES: readonly Rule[] = [
     description: "Seeds grow into maze-like corridors",
     birth: new Set([3]),
     survive: new Set([1, 2, 3, 4, 5]),
-    patterns: [...MAZE, ...MAZE_CONSTRUCTIONS],
+    patterns: [...MAZE],
   },
   {
     name: "Life without Death",
@@ -1449,7 +916,7 @@ export const RULES: readonly Rule[] = [
     description: "Cells are born but never die — infinite growth",
     birth: new Set([3]),
     survive: new Set([0, 1, 2, 3, 4, 5, 6, 7, 8]),
-    patterns: [...LWOD, ...LWOD_CONSTRUCTIONS],
+    patterns: [...LWOD],
   },
   {
     name: "Morley",
@@ -1457,7 +924,7 @@ export const RULES: readonly Rule[] = [
     description: "Also known as Move — rich oscillators and long-lived patterns",
     birth: new Set([3, 6, 8]),
     survive: new Set([2, 4, 5]),
-    patterns: [...MORLEY, ...MORLEY_CONSTRUCTIONS],
+    patterns: [...MORLEY],
   },
   {
     name: "Diamoeba",
@@ -1465,7 +932,7 @@ export const RULES: readonly Rule[] = [
     description: "Dense blobs behave like amoebas — grow and split organically",
     birth: new Set([3, 5, 6, 7, 8]),
     survive: new Set([5, 6, 7, 8]),
-    patterns: [...DIAMOEBA, ...DIAMOEBA_CONSTRUCTIONS],
+    patterns: [...DIAMOEBA],
   },
   {
     name: "2×2",
@@ -1473,7 +940,7 @@ export const RULES: readonly Rule[] = [
     description: "Named for 2×2 block dynamics — contains diagonal gliders",
     birth: new Set([3, 6]),
     survive: new Set([1, 2, 5]),
-    patterns: [...TWOX2, ...TWOX2_CONSTRUCTIONS],
+    patterns: [...TWOX2],
   },
   {
     name: "Coral",
@@ -1481,7 +948,7 @@ export const RULES: readonly Rule[] = [
     description: "Dense clusters grow slowly outward like coral reefs",
     birth: new Set([3]),
     survive: new Set([4, 5, 6, 7, 8]),
-    patterns: [...CORAL, ...CORAL_CONSTRUCTIONS],
+    patterns: [...CORAL],
   },
   {
     name: "Fredkin Replicator",
@@ -1489,7 +956,7 @@ export const RULES: readonly Rule[] = [
     description: "Any pattern replicates at power-of-2 generations — fractal Sierpinski patterns",
     birth: new Set([1, 3, 5, 7]),
     survive: new Set([1, 3, 5, 7]),
-    patterns: [...FREDKIN, ...FREDKIN_CONSTRUCTIONS],
+    patterns: [...FREDKIN],
   },
   {
     name: "Anneal",
@@ -1497,7 +964,7 @@ export const RULES: readonly Rule[] = [
     description: "Random patterns anneal into stable regions — like cooling metal",
     birth: new Set([4, 6, 7, 8]),
     survive: new Set([3, 5, 6, 7, 8]),
-    patterns: [...ANNEAL, ...ANNEAL_CONSTRUCTIONS],
+    patterns: [...ANNEAL],
   },
   {
     name: "Walled Cities",
@@ -1505,7 +972,7 @@ export const RULES: readonly Rule[] = [
     description: "Patterns grow into enclosed walled regions with stable boundaries",
     birth: new Set([4, 5, 6, 7, 8]),
     survive: new Set([2, 3, 4, 5]),
-    patterns: [...WALLEDCITIES, ...WALLEDCITIES_CONSTRUCTIONS],
+    patterns: [...WALLEDCITIES],
   },
   {
     name: "Stains",
@@ -1513,6 +980,6 @@ export const RULES: readonly Rule[] = [
     description: "Patterns spread and leave permanent stains — ink-drop dynamics",
     birth: new Set([3, 6, 7, 8]),
     survive: new Set([2, 3, 5, 6, 7, 8]),
-    patterns: [...STAINS, ...STAINS_CONSTRUCTIONS],
+    patterns: [...STAINS],
   },
 ];

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cellKey, parseKey, step, type LiveCells } from "./engine";
-import { type Pattern } from "./patterns";
+import { parseRLE, type Pattern } from "./patterns";
 import { RULES, type Rule } from "./rules";
 import { buildAgeColors, PALETTES, type Palette } from "./palettes";
 
@@ -99,6 +99,9 @@ export function App() {
   const [palette, setPalette] = useState<Palette>(PALETTES[0]);
   const [patternView, setPatternView] = useState<"list" | "grid">("list");
   const [zoom, setZoom] = useState(DEFAULT_CELL_SIZE);
+  const [showLoadRLE, setShowLoadRLE] = useState(false);
+  const [rleText, setRleText] = useState("");
+  const [rleError, setRleError] = useState<string | null>(null);
 
   const syncStats = useCallback(() => {
     setGeneration(generationRef.current);
@@ -443,6 +446,98 @@ export function App() {
     return brush.kind === "pattern" && b.pattern.name === brush.pattern.name;
   };
 
+  const loadRLE = (text: string) => {
+    setRleError(null);
+    try {
+      const parsed = parseRLE(text);
+      if (parsed.cells.length === 0) {
+        setRleError("No cells found in RLE. Check that the pattern body ends with '!'.");
+        return;
+      }
+      // Try to match rule
+      if (parsed.birth && parsed.survive) {
+        const birthStr = [...parsed.birth].sort().join("");
+        const surviveStr = [...parsed.survive].sort().join("");
+        const match = RULES.find((r) => {
+          const rb = [...r.birth].sort().join("");
+          const rs = [...r.survive].sort().join("");
+          return rb === birthStr && rs === surviveStr;
+        });
+        if (match) {
+          ruleRef.current = match;
+          setRule(match);
+        } else {
+          // Create a custom rule on the fly
+          const custom: Rule = {
+            name: `Custom (${parsed.ruleNotation ?? "B?/S?"})`,
+            notation: parsed.ruleNotation ?? "custom",
+            description: "Loaded from RLE — rule not in built-in list",
+            birth: parsed.birth,
+            survive: parsed.survive,
+            patterns: [],
+          };
+          ruleRef.current = custom;
+          setRule(custom);
+        }
+      }
+      // Reset and center the pattern on the viewport
+      cellsRef.current = new Map();
+      generationRef.current = 0;
+      isRunningRef.current = false;
+      setIsRunning(false);
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const [x, y] of parsed.cells) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+      const cx = Math.floor((minX + maxX) / 2);
+      const cy = Math.floor((minY + maxY) / 2);
+
+      // Fit zoom: auto-fit if pattern is too big for current view
+      const { width, height } = sizeRef.current;
+      const w = maxX - minX + 1;
+      const h = maxY - minY + 1;
+      const cellSizeToFit = Math.min(width / (w + 4), height / (h + 4));
+      const desiredSize = Math.max(MIN_CELL_SIZE, Math.min(MAX_CELL_SIZE, cellSizeToFit));
+      if (desiredSize < viewRef.current.cellSize) {
+        viewRef.current.cellSize = desiredSize;
+        setZoom(desiredSize);
+      }
+
+      // Center the pattern
+      const size = viewRef.current.cellSize;
+      viewRef.current.offsetX = cx * size - width / 2;
+      viewRef.current.offsetY = cy * size - height / 2;
+
+      // Stamp all cells
+      for (const [x, y] of parsed.cells) {
+        cellsRef.current.set(cellKey(x, y), 0);
+      }
+
+      brushRef.current = CELL_BRUSH;
+      setBrush(CELL_BRUSH);
+      hoverCellRef.current = null;
+      draw();
+      syncStats();
+      setShowLoadRLE(false);
+      setRleText("");
+    } catch (err) {
+      setRleError(err instanceof Error ? err.message : "Failed to parse RLE");
+    }
+  };
+
+  const onRLEFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === "string" ? reader.result : "";
+      setRleText(text);
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="app">
       <div className="toolbar">
@@ -455,6 +550,9 @@ export function App() {
           </button>
           <button className="danger" onClick={doReset}>
             Reset
+          </button>
+          <button onClick={() => { setShowLoadRLE(true); setRleError(null); }}>
+            Load RLE
           </button>
         </div>
 
@@ -652,6 +750,62 @@ export function App() {
         </div>
       </div>
 
+      {showLoadRLE && (
+        <div
+          className="modal-backdrop"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLoadRLE(false); }}
+        >
+          <div className="modal">
+            <div className="modal-header">
+              <div className="modal-title">Load RLE pattern</div>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowLoadRLE(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="modal-hint">
+                Paste RLE text from{" "}
+                <a href="https://conwaylife.com/wiki/Category:Patterns" target="_blank" rel="noreferrer">
+                  LifeWiki
+                </a>
+                {" "}or upload a .rle file. Rule (B/S) auto-detected from header.
+              </p>
+              <textarea
+                className="rle-input"
+                value={rleText}
+                onChange={(e) => setRleText(e.target.value)}
+                placeholder={`#N Glider\nx = 3, y = 3, rule = B3/S23\nbo$2bo$3o!`}
+                spellCheck={false}
+              />
+              <div className="modal-actions">
+                <label className="file-btn">
+                  Upload .rle
+                  <input
+                    type="file"
+                    accept=".rle,.lif,.life,.txt,text/plain"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onRLEFile(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {rleError && <span className="rle-error">{rleError}</span>}
+                <span style={{ flex: 1 }} />
+                <button onClick={() => setShowLoadRLE(false)}>Cancel</button>
+                <button className="primary" onClick={() => loadRLE(rleText)} disabled={!rleText.trim()}>
+                  Load
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
