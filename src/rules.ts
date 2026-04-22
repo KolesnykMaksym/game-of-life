@@ -1,4 +1,5 @@
 import { fromRLE, fromRows, type Pattern } from "./patterns";
+import type { Topology } from "./engine";
 
 export interface Rule {
   name: string;
@@ -7,7 +8,71 @@ export interface Rule {
   birth: ReadonlySet<number>;
   survive: ReadonlySet<number>;
   patterns: readonly Pattern[];
+  topology?: Topology; // default "square"
 }
+
+// Hex patterns use axial coordinates (q, r) rather than (x, y).
+const HEX_LIFE: Pattern[] = [
+  {
+    name: "Single cell",
+    description: "One live cell — dies immediately (0 neighbours)",
+    cells: [[0, 0]],
+  },
+  {
+    name: "Pair",
+    description: "Two adjacent cells — seeds two new cells on either side",
+    cells: [[0, 0], [1, 0]],
+  },
+  {
+    name: "Triangle",
+    description: "Three cells forming a triangle — rotates and grows",
+    cells: [[0, 0], [1, 0], [0, 1]],
+  },
+  {
+    name: "Line of 3",
+    description: "Straight line — disperses outward",
+    cells: [[-1, 0], [0, 0], [1, 0]],
+  },
+  {
+    name: "Filled hexagon",
+    description: "7 cells (centre + ring) — centre dies, ring stays briefly",
+    cells: [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]],
+  },
+  {
+    name: "Hex ring",
+    description: "6 cells around an empty centre — quickly collapses",
+    cells: [[1, 0], [-1, 0], [0, 1], [0, -1], [1, -1], [-1, 1]],
+  },
+  {
+    name: "Y-pentomino",
+    description: "Five-cell seed — produces complex transient",
+    cells: [[0, 0], [1, 0], [-1, 0], [0, -1], [0, 1]],
+  },
+  {
+    name: "Parallelogram",
+    description: "4 cells — oscillates through several shapes",
+    cells: [[0, 0], [1, 0], [0, 1], [1, 1]],
+  },
+  {
+    name: "Hex soup (7)",
+    description: "Dense cluster — explodes into active region",
+    cells: [
+      [0, 0], [1, 0], [2, 0],
+      [0, 1], [1, 1],
+      [-1, 2], [0, 2],
+    ],
+  },
+  {
+    name: "Big blob",
+    description: "Compact cluster for observing growth dynamics",
+    cells: [
+      [-1, -1], [0, -1], [1, -1], [2, -1],
+      [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0],
+      [-2, 1], [-1, 1], [0, 1], [1, 1],
+      [-1, 2], [0, 2],
+    ],
+  },
+];
 
 const CONWAY: Pattern[] = [
   // Still lifes
@@ -981,5 +1046,14 @@ export const RULES: readonly Rule[] = [
     birth: new Set([3, 6, 7, 8]),
     survive: new Set([2, 3, 5, 6, 7, 8]),
     patterns: [...STAINS],
+  },
+  {
+    name: "Hex Life",
+    notation: "H:B2/S34",
+    description: "Carter Bays' hexagonal analogue of Conway Life — 6 neighbours per cell",
+    birth: new Set([2]),
+    survive: new Set([3, 4]),
+    patterns: [...HEX_LIFE],
+    topology: "hex",
   },
 ];

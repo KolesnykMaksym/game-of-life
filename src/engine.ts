@@ -1,4 +1,5 @@
 export type LiveCells = Map<string, number>;
+export type Topology = "square" | "hex";
 
 export const cellKey = (x: number, y: number): string => `${x},${y}`;
 
@@ -7,22 +8,31 @@ export const parseKey = (key: string): [number, number] => {
   return [Number(key.slice(0, comma)), Number(key.slice(comma + 1))];
 };
 
-const NEIGHBORS: ReadonlyArray<readonly [number, number]> = [
+const SQUARE_NEIGHBORS: ReadonlyArray<readonly [number, number]> = [
   [-1, -1], [0, -1], [1, -1],
   [-1, 0],           [1, 0],
   [-1, 1],  [0, 1],  [1, 1],
+];
+
+// Axial hex neighbours (pointy-top). Coordinates are (q, r).
+const HEX_NEIGHBORS: ReadonlyArray<readonly [number, number]> = [
+  [+1, 0], [-1, 0],
+  [0, +1], [0, -1],
+  [+1, -1], [-1, +1],
 ];
 
 export function step(
   cells: LiveCells,
   birth: ReadonlySet<number>,
   survive: ReadonlySet<number>,
+  topology: Topology = "square",
 ): LiveCells {
+  const neighbors = topology === "hex" ? HEX_NEIGHBORS : SQUARE_NEIGHBORS;
   const neighborCounts = new Map<string, number>();
 
   for (const key of cells.keys()) {
     const [x, y] = parseKey(key);
-    for (const [dx, dy] of NEIGHBORS) {
+    for (const [dx, dy] of neighbors) {
       const nk = cellKey(x + dx, y + dy);
       neighborCounts.set(nk, (neighborCounts.get(nk) ?? 0) + 1);
     }

@@ -1,9 +1,47 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { cellKey, parseKey, step, type LiveCells } from "./engine";
+import { cellKey, parseKey, step, type LiveCells, type Topology } from "./engine";
 import { parseRLE, type Pattern } from "./patterns";
 import { RULES, type Rule } from "./rules";
 import { buildAgeColors, PALETTES, type Palette } from "./palettes";
 import { RLE_LIBRARY, type LibraryEntry } from "./rle-library";
+
+// ---- Hexagonal (pointy-top, axial q/r) geometry ----
+const SQRT3 = Math.sqrt(3);
+
+function hexToPixel(q: number, r: number, size: number): [number, number] {
+  return [size * SQRT3 * (q + r / 2), size * 1.5 * r];
+}
+
+function pixelToHex(px: number, py: number, size: number): [number, number] {
+  const fq = ((SQRT3 / 3) * px - py / 3) / size;
+  const fr = ((2 / 3) * py) / size;
+  // Cube rounding
+  const x = fq;
+  const z = fr;
+  const y = -x - z;
+  let rx = Math.round(x);
+  let ry = Math.round(y);
+  let rz = Math.round(z);
+  const dx = Math.abs(rx - x);
+  const dy = Math.abs(ry - y);
+  const dz = Math.abs(rz - z);
+  if (dx > dy && dx > dz) rx = -ry - rz;
+  else if (dy > dz) ry = -rx - rz;
+  else rz = -rx - ry;
+  return [rx, rz];
+}
+
+function tracePointyHex(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  const hx = (SQRT3 / 2) * r;
+  const h = r / 2;
+  ctx.moveTo(cx, cy - r);
+  ctx.lineTo(cx + hx, cy - h);
+  ctx.lineTo(cx + hx, cy + h);
+  ctx.lineTo(cx, cy + r);
+  ctx.lineTo(cx - hx, cy + h);
+  ctx.lineTo(cx - hx, cy - h);
+  ctx.closePath();
+}
 
 interface View {
   offsetX: number;
@@ -39,9 +77,32 @@ function patternCenter(pattern: Pattern): { cx: number; cy: number } {
   return { cx: Math.floor((minX + maxX) / 2), cy: Math.floor((minY + maxY) / 2) };
 }
 
-function PatternPreview({ pattern }: { pattern: Pattern }) {
+function PatternPreview({ pattern, topology = "square" }: { pattern: Pattern; topology?: Topology }) {
   const size = 44;
-  const { viewBox, rects } = useMemo(() => {
+  const { viewBox, shapes } = useMemo(() => {
+    if (topology === "hex") {
+      // Hex preview — use axial (q,r) → pixel with hex radius = 1
+      const pts = pattern.cells.map(([q, r]) => hexToPixel(q, r, 1));
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const [px, py] of pts) {
+        if (px < minX) minX = px;
+        if (py < minY) minY = py;
+        if (px > maxX) maxX = px;
+        if (py > maxY) maxY = py;
+      }
+      const pad = 1.1;
+      const w = maxX - minX + 2 * pad;
+      const h = maxY - minY + 2 * pad;
+      const hexPoints = Array.from({ length: 6 }, (_, i) => {
+        const a = (Math.PI / 3) * i - Math.PI / 2;
+        return `${Math.cos(a) * 0.92},${Math.sin(a) * 0.92}`;
+      }).join(" ");
+      const shapes = pts.map(([px, py], i) => (
+        <polygon key={i} points={hexPoints} transform={`translate(${px} ${py})`} fill="currentColor" />
+      ));
+      return { viewBox: `${minX - pad} ${minY - pad} ${w} ${h}`, shapes };
+    }
+    // Square
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const [x, y] of pattern.cells) {
       if (x < minX) minX = x;
@@ -53,15 +114,15 @@ function PatternPreview({ pattern }: { pattern: Pattern }) {
     const h = maxY - minY + 1;
     return {
       viewBox: `${minX - 0.5} ${minY - 0.5} ${w + 1} ${h + 1}`,
-      rects: pattern.cells.map(([x, y], i) => (
+      shapes: pattern.cells.map(([x, y], i) => (
         <rect key={i} x={x} y={y} width={0.9} height={0.9} rx={0.15} fill="currentColor" />
       )),
     };
-  }, [pattern]);
+  }, [pattern, topology]);
 
   return (
     <svg className="preview" width={size} height={size} viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
-      {rects}
+      {shapes}
     </svg>
   );
 }
@@ -81,6 +142,7 @@ export function App() {
 
   const brushRef = useRef<Brush>(CELL_BRUSH);
   const ruleRef = useRef<Rule>(RULES[0]);
+  const topologyRef = useRef<Topology>(RULES[0].topology ?? "square");
   const ageColorsRef = useRef<readonly string[]>(buildAgeColors(PALETTES[0], AGE_STEPS));
   const paintModeRef = useRef<"add" | "remove" | null>(null);
   const paintedRef = useRef<Set<string>>(new Set());
@@ -132,6 +194,69 @@ export function App() {
     ctx.fillStyle = "#0d1117";
     ctx.fillRect(0, 0, width, height);
 
+    const cells = cellsRef.current;
+    const palette = ageColorsRef.current;
+    const b = brushRef.current;
+    const hover = hoverCellRef.current;
+
+    if (topologyRef.current === "hex") {
+      // ---- Hex rendering ----
+      const hexFillR = Math.max(0.5, cellSize * 0.92);
+      const corners = [
+        pixelToHex(offsetX, offsetY, cellSize),
+        pixelToHex(offsetX + width, offsetY, cellSize),
+        pixelToHex(offsetX, offsetY + height, cellSize),
+        pixelToHex(offsetX + width, offsetY + height, cellSize),
+      ];
+      let minQ = Infinity, maxQ = -Infinity, minR = Infinity, maxR = -Infinity;
+      for (const [q, r] of corners) {
+        if (q < minQ) minQ = q;
+        if (q > maxQ) maxQ = q;
+        if (r < minR) minR = r;
+        if (r > maxR) maxR = r;
+      }
+      minQ -= 1; maxQ += 1; minR -= 1; maxR += 1;
+
+      const buckets: Array<Array<[number, number]> | undefined> = new Array(MAX_AGE + 1);
+      for (const [key, age] of cells) {
+        const [q, r] = parseKey(key);
+        if (q < minQ || q > maxQ || r < minR || r > maxR) continue;
+        const idx = age > MAX_AGE ? MAX_AGE : age;
+        const bucket = buckets[idx] ?? (buckets[idx] = []);
+        bucket.push([q, r]);
+      }
+      for (let i = 0; i <= MAX_AGE; i++) {
+        const bucket = buckets[i];
+        if (!bucket) continue;
+        ctx.fillStyle = palette[i];
+        ctx.beginPath();
+        for (const [q, r] of bucket) {
+          const [ppx, ppy] = hexToPixel(q, r, cellSize);
+          tracePointyHex(ctx, ppx - offsetX, ppy - offsetY, hexFillR);
+        }
+        ctx.fill();
+      }
+
+      if (b.kind === "pattern" && hover && !pointerDownRef.current) {
+        const { cx, cy } = patternCenter(b.pattern);
+        ctx.fillStyle = "rgba(88, 166, 255, 0.35)";
+        ctx.strokeStyle = "rgba(88, 166, 255, 0.9)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (const [q, r] of b.pattern.cells) {
+          const tq = hover[0] + (q - cx);
+          const tr = hover[1] + (r - cy);
+          if (tq < minQ || tq > maxQ || tr < minR || tr > maxR) continue;
+          const [ppx, ppy] = hexToPixel(tq, tr, cellSize);
+          tracePointyHex(ctx, ppx - offsetX, ppy - offsetY, hexFillR);
+        }
+        ctx.fill();
+        ctx.stroke();
+      }
+      return;
+    }
+
+    // ---- Square rendering (original) ----
     if (cellSize >= 6) {
       ctx.strokeStyle = "#21262d";
       ctx.lineWidth = 1;
@@ -161,7 +286,6 @@ export function App() {
     const minCy = Math.floor(offsetY / cellSize) - 1;
     const maxCy = Math.ceil((offsetY + height) / cellSize) + 1;
 
-    const cells = cellsRef.current;
     const buckets: Array<Array<[number, number]> | undefined> = new Array(MAX_AGE + 1);
     for (const [key, age] of cells) {
       const [cx, cy] = parseKey(key);
@@ -170,7 +294,6 @@ export function App() {
       const bucket = buckets[idx] ?? (buckets[idx] = []);
       bucket.push([cx, cy]);
     }
-    const palette = ageColorsRef.current;
     for (let i = 0; i <= MAX_AGE; i++) {
       const bucket = buckets[i];
       if (!bucket) continue;
@@ -178,8 +301,6 @@ export function App() {
       for (const [cx, cy] of bucket) fillRectAt(cx, cy);
     }
 
-    const b = brushRef.current;
-    const hover = hoverCellRef.current;
     if (b.kind === "pattern" && hover && !pointerDownRef.current) {
       const { cx, cy } = patternCenter(b.pattern);
       ctx.fillStyle = "rgba(88, 166, 255, 0.35)";
@@ -238,7 +359,7 @@ export function App() {
       if (t - lastTickRef.current >= interval) {
         lastTickRef.current = t;
         const { birth, survive } = ruleRef.current;
-        cellsRef.current = step(cellsRef.current, birth, survive);
+        cellsRef.current = step(cellsRef.current, birth, survive, topologyRef.current);
         generationRef.current += 1;
         draw();
         syncStats();
@@ -294,9 +415,17 @@ export function App() {
 
   const selectRule = (name: string) => {
     const next = RULES.find((r) => r.name === name) ?? RULES[0];
+    const prevTopology = topologyRef.current;
+    const nextTopology: Topology = next.topology ?? "square";
     ruleRef.current = next;
+    topologyRef.current = nextTopology;
     setRule(next);
-    cellsRef.current = new Map();
+    // Topology change invalidates coordinate interpretation — reset cells.
+    if (prevTopology !== nextTopology) {
+      cellsRef.current = new Map();
+    } else {
+      cellsRef.current = new Map();
+    }
     generationRef.current = 0;
     isRunningRef.current = false;
     setIsRunning(false);
@@ -313,6 +442,9 @@ export function App() {
     const x = clientX - rect.left;
     const y = clientY - rect.top;
     const { offsetX, offsetY, cellSize } = viewRef.current;
+    if (topologyRef.current === "hex") {
+      return pixelToHex(x + offsetX, y + offsetY, cellSize);
+    }
     return [Math.floor((x + offsetX) / cellSize), Math.floor((y + offsetY) / cellSize)];
   };
 
@@ -471,6 +603,7 @@ export function App() {
         const birthStr = [...parsed.birth].sort().join("");
         const surviveStr = [...parsed.survive].sort().join("");
         const match = RULES.find((r) => {
+          if ((r.topology ?? "square") !== "square") return false;
           const rb = [...r.birth].sort().join("");
           const rs = [...r.survive].sort().join("");
           return rb === birthStr && rs === surviveStr;
@@ -713,7 +846,7 @@ export function App() {
                       onClick={() => selectBrush(b)}
                       title={fullTitle}
                     >
-                      <PatternPreview pattern={pattern} />
+                      <PatternPreview pattern={pattern} topology={rule.topology ?? "square"} />
                       <span className="pattern-tile-name">{pattern.name}</span>
                     </button>,
                   );
@@ -726,7 +859,7 @@ export function App() {
                       onClick={() => selectBrush(b)}
                       title={pattern.description}
                     >
-                      <PatternPreview pattern={pattern} />
+                      <PatternPreview pattern={pattern} topology={rule.topology ?? "square"} />
                       <div className="brush-meta">
                         <div className="brush-name">{pattern.name}</div>
                         <div className="brush-desc">{pattern.description}</div>
