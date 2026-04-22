@@ -3,6 +3,7 @@ import { cellKey, parseKey, step, type LiveCells } from "./engine";
 import { parseRLE, type Pattern } from "./patterns";
 import { RULES, type Rule } from "./rules";
 import { buildAgeColors, PALETTES, type Palette } from "./palettes";
+import { RLE_LIBRARY, type LibraryEntry } from "./rle-library";
 
 interface View {
   offsetX: number;
@@ -102,6 +103,17 @@ export function App() {
   const [showLoadRLE, setShowLoadRLE] = useState(false);
   const [rleText, setRleText] = useState("");
   const [rleError, setRleError] = useState<string | null>(null);
+  const [libraryLoading, setLibraryLoading] = useState<string | null>(null);
+
+  const libraryByCategory = useMemo(() => {
+    const map = new Map<string, LibraryEntry[]>();
+    for (const entry of RLE_LIBRARY) {
+      const list = map.get(entry.category) ?? [];
+      list.push(entry);
+      map.set(entry.category, list);
+    }
+    return [...map.entries()];
+  }, []);
 
   const syncStats = useCallback(() => {
     setGeneration(generationRef.current);
@@ -538,6 +550,25 @@ export function App() {
     reader.readAsText(file);
   };
 
+  const loadFromLibrary = async (entry: LibraryEntry) => {
+    if (libraryLoading) return;
+    setLibraryLoading(entry.file);
+    setRleError(null);
+    try {
+      const res = await fetch(import.meta.env.BASE_URL + entry.file);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      loadRLE(text);
+    } catch (err) {
+      setRleError(
+        `Could not load "${entry.name}": ` +
+          (err instanceof Error ? err.message : "unknown error"),
+      );
+    } finally {
+      setLibraryLoading(null);
+    }
+  };
+
   return (
     <div className="app">
       <div className="toolbar">
@@ -753,9 +784,9 @@ export function App() {
       {showLoadRLE && (
         <div
           className="modal-backdrop"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowLoadRLE(false); }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowLoadRLE(false); }}
         >
-          <div className="modal">
+          <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">Load RLE pattern</div>
               <button
@@ -768,6 +799,32 @@ export function App() {
               </button>
             </div>
             <div className="modal-body">
+              <div className="library-section">
+                <div className="library-title">Load from library</div>
+                {libraryByCategory.map(([cat, items]) => (
+                  <div key={cat} className="library-group">
+                    <div className="library-category">{cat}</div>
+                    <div className="library-grid">
+                      {items.map((item) => (
+                        <button
+                          key={item.file}
+                          type="button"
+                          className="library-item"
+                          onClick={() => loadFromLibrary(item)}
+                          disabled={libraryLoading !== null}
+                          title={item.description}
+                        >
+                          <span className="library-item-name">
+                            {libraryLoading === item.file ? "Loading…" : item.name}
+                          </span>
+                          <span className="library-item-desc">{item.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="library-divider">or paste manually</div>
               <p className="modal-hint">
                 Paste RLE text from{" "}
                 <a href="https://conwaylife.com/wiki/Category:Patterns" target="_blank" rel="noreferrer">
@@ -779,8 +836,9 @@ export function App() {
                 className="rle-input"
                 value={rleText}
                 onChange={(e) => setRleText(e.target.value)}
-                placeholder={`#N Glider\nx = 3, y = 3, rule = B3/S23\nbo$2bo$3o!`}
+                placeholder={"#N Glider\nx = 3, y = 3, rule = B3/S23\nbo$2bo$3o!"}
                 spellCheck={false}
+                autoFocus
               />
               <div className="modal-actions">
                 <label className="file-btn">
@@ -797,8 +855,10 @@ export function App() {
                 </label>
                 {rleError && <span className="rle-error">{rleError}</span>}
                 <span style={{ flex: 1 }} />
-                <button onClick={() => setShowLoadRLE(false)}>Cancel</button>
-                <button className="primary" onClick={() => loadRLE(rleText)} disabled={!rleText.trim()}>
+                <button type="button" onClick={() => setShowLoadRLE(false)}>
+                  Cancel
+                </button>
+                <button type="button" className="primary" onClick={() => loadRLE(rleText)}>
                   Load
                 </button>
               </div>
