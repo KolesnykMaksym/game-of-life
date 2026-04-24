@@ -149,6 +149,14 @@ export function App() {
   const panRef = useRef<{ startX: number; startY: number; origOffsetX: number; origOffsetY: number } | null>(null);
   const hoverCellRef = useRef<[number, number] | null>(null);
   const pointerDownRef = useRef(false);
+  // Multi-touch: track active pointers & pinch anchor
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{
+    origDist: number;
+    origCellSize: number;
+    worldX: number;
+    worldY: number;
+  } | null>(null);
 
   const [, forceRender] = useState(0);
   const repaint = useCallback(() => forceRender((n) => n + 1), []);
@@ -166,6 +174,7 @@ export function App() {
   const [rleText, setRleText] = useState("");
   const [rleError, setRleError] = useState<string | null>(null);
   const [libraryLoading, setLibraryLoading] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const libraryByCategory = useMemo(() => {
     const map = new Map<string, LibraryEntry[]>();
@@ -459,9 +468,49 @@ export function App() {
     syncStats();
   };
 
+  const beginPinch = () => {
+    // Roll back any accidental single-tap paint that may have already toggled a cell.
+    if (paintModeRef.current && paintedRef.current.size > 0) {
+      for (const key of paintedRef.current) {
+        if (paintModeRef.current === "add") cellsRef.current.delete(key);
+        else cellsRef.current.set(key, 0);
+      }
+      paintedRef.current.clear();
+      syncStats();
+    }
+    paintModeRef.current = null;
+    panRef.current = null;
+
+    const pts = [...activePointersRef.current.values()];
+    if (pts.length < 2) return;
+    const [p0, p1] = pts;
+    const dist = Math.hypot(p0.x - p1.x, p0.y - p1.y);
+    const midX = (p0.x + p1.x) / 2;
+    const midY = (p0.y + p1.y) / 2;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const view = viewRef.current;
+    const worldX = (midX - rect.left + view.offsetX) / view.cellSize;
+    const worldY = (midY - rect.top + view.offsetY) / view.cellSize;
+    pinchRef.current = { origDist: dist, origCellSize: view.cellSize, worldX, worldY };
+  };
+
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+    try {
+      (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* setPointerCapture can fail for synthetic/cross-frame pointers — safe to ignore */
+    }
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     pointerDownRef.current = true;
+
+    // Second finger → pinch/pan gesture
+    if (activePointersRef.current.size >= 2) {
+      beginPinch();
+      draw();
+      return;
+    }
 
     if (e.button === 1 || e.button === 2 || e.shiftKey) {
       panRef.current = {
@@ -493,6 +542,37 @@ export function App() {
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (activePointersRef.current.has(e.pointerId)) {
+      activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    // Pinch / two-finger pan
+    if (pinchRef.current && activePointersRef.current.size >= 2) {
+      const pts = [...activePointersRef.current.values()];
+      const [p0, p1] = pts;
+      const dist = Math.hypot(p0.x - p1.x, p0.y - p1.y);
+      const midX = (p0.x + p1.x) / 2;
+      const midY = (p0.y + p1.y) / 2;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = midX - rect.left;
+      const cy = midY - rect.top;
+      const { origDist, origCellSize, worldX, worldY } = pinchRef.current;
+      const scale = dist / origDist;
+      const newCellSize = Math.max(
+        MIN_CELL_SIZE,
+        Math.min(MAX_CELL_SIZE, origCellSize * scale),
+      );
+      const view = viewRef.current;
+      view.cellSize = newCellSize;
+      view.offsetX = worldX * newCellSize - cx;
+      view.offsetY = worldY * newCellSize - cy;
+      setZoom(newCellSize);
+      draw();
+      return;
+    }
+
     if (panRef.current) {
       viewRef.current.offsetX = panRef.current.origOffsetX - (e.clientX - panRef.current.startX);
       viewRef.current.offsetY = panRef.current.origOffsetY - (e.clientY - panRef.current.startY);
@@ -522,12 +602,18 @@ export function App() {
     }
   };
 
-  const onPointerUp = () => {
-    paintModeRef.current = null;
-    panRef.current = null;
-    pointerDownRef.current = false;
-    repaint();
-    draw();
+  const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    activePointersRef.current.delete(e.pointerId);
+    if (activePointersRef.current.size < 2) {
+      pinchRef.current = null;
+    }
+    if (activePointersRef.current.size === 0) {
+      paintModeRef.current = null;
+      panRef.current = null;
+      pointerDownRef.current = false;
+      repaint();
+      draw();
+    }
   };
 
   const onPointerLeave = () => {
@@ -705,6 +791,18 @@ export function App() {
   return (
     <div className="app">
       <div className="toolbar">
+        <button
+          type="button"
+          className="menu-toggle"
+          aria-label="Toggle menu"
+          onClick={() => setSidebarOpen((v) => !v)}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden>
+            <rect x="2" y="3" width="14" height="2" rx="1" />
+            <rect x="2" y="8" width="14" height="2" rx="1" />
+            <rect x="2" y="13" width="14" height="2" rx="1" />
+          </svg>
+        </button>
         <div className="group">
           <button className="primary" onClick={toggleRun}>
             {isRunning ? "Pause" : "Play"}
@@ -733,7 +831,7 @@ export function App() {
           <span style={{ fontSize: 12, color: "var(--muted)", minWidth: 48 }}>{speed} fps</span>
         </div>
 
-        <div className="group">
+        <div className="group zoom-group">
           <label htmlFor="zoom">Zoom</label>
           <input
             id="zoom"
@@ -755,8 +853,21 @@ export function App() {
         </div>
       </div>
 
-      <div className="main">
-        <aside className="sidebar">
+      <div className={`main ${sidebarOpen ? "sidebar-open" : ""}`}>
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden
+        />
+        <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+          <button
+            type="button"
+            className="sidebar-close"
+            aria-label="Close menu"
+            onClick={() => setSidebarOpen(false)}
+          >
+            ×
+          </button>
           <div className="sidebar-scroll">
           <div className="sidebar-title">Rule</div>
           <select
@@ -779,7 +890,16 @@ export function App() {
             onClick={() => selectBrush(CELL_BRUSH)}
           >
             <div className="preview cell-preview" aria-hidden>
-              <span />
+              {(rule.topology ?? "square") === "hex" ? (
+                <svg width="14" height="16" viewBox="-1 -1.05 2 2.1">
+                  <polygon
+                    points="0,-1 0.866,-0.5 0.866,0.5 0,1 -0.866,0.5 -0.866,-0.5"
+                    fill="var(--accent)"
+                  />
+                </svg>
+              ) : (
+                <span />
+              )}
             </div>
             <div className="brush-meta">
               <div className="brush-name">Cell</div>
